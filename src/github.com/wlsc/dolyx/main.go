@@ -1,29 +1,36 @@
 package main
 
 import (
+	"context"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
+	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"net/http"
-	"log"
-	"os/exec"
-	"regexp"
+	"time"
 )
 
 const DEFAULT_HOST string = "localhost"
 const DEFAULT_PORT int64 = 8080
 
-const CMD_DELIMITER string = "="
-
 type Command struct {
-	Name  string                `form:"name" json:"name" binding:"required"`
-	Value string                `form:"value" json:"value" binding:"required"`
+	Name  string `form:"name" json:"name" binding:"required"`
+	Value string `form:"value" json:"value" binding:"required"`
 }
 
 type Request struct {
-	Type    string        `form:"type" json:"type" binding:"required"`
-	Command Command        `form:"command" json:"command" binding:"required"`
+	Type    string  `form:"type" json:"type" binding:"required"`
+	Command Command `form:"command" json:"command" binding:"required"`
+}
+
+type Image struct {
+	Id      string
+	Tag     string
+	Created string
+	Size    string
 }
 
 func main() {
@@ -34,7 +41,7 @@ func main() {
 	port := DEFAULT_PORT
 
 	if paramsLength > 1 {
-		mappings := getMappings(os.Args[1:])
+		mappings := getProgramArguments(os.Args[1:])
 
 		if mappings["host"] == "" {
 			host = DEFAULT_HOST
@@ -49,8 +56,6 @@ func main() {
 		}
 	}
 
-	regex_multiple_spaces := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
-
 	log.Println("Preparing server on " + host + ":" + strconv.FormatInt(port, 10))
 
 	router := gin.Default()
@@ -58,23 +63,8 @@ func main() {
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/static", "./static")
 	router.GET("/", func(c *gin.Context) {
-
-		images := getImages()
-		imagesHeader := strings.Split(regex_multiple_spaces.ReplaceAllString(images[0], ";"), ";")
-		imagesContent := [][]string{}
-
-		for _, line := range images[1:] {
-
-			var splitted = strings.Split(regex_multiple_spaces.ReplaceAllString(line, ";"), ";")
-
-			if len(splitted) > 1 {
-				imagesContent = append(imagesContent, splitted)
-			}
-		}
-
 		c.HTML(http.StatusOK, "index.tpl", gin.H{
-			"images_list_header" : imagesHeader,
-			"images_list" : imagesContent,
+			"images": getImages(),
 		})
 	})
 
@@ -96,8 +86,7 @@ func main() {
 		}
 	})
 
-	// listen on address:port
-	router.Run(host + ":" + strconv.FormatInt(port, 10))
+	_ = router.Run(host + ":" + strconv.FormatInt(port, 10))
 }
 
 /**
@@ -145,16 +134,56 @@ func showError(c *gin.Context) {
 /**
  *	Retrieves all available docker images
  */
-func getImages() [] string {
+func getImages() []Image {
 
-	out, err := exec.Command("docker", "images").Output()
+	cli, ctx := getClient()
 
+	imagesRaw, err := cli.ImageList(ctx, types.ImageListOptions{})
 	if err != nil {
 		log.Fatal(err)
-		return []string{}
+		return []Image{}
 	}
 
-	return strings.Split(string(out[:]), "\n")
+	var images []Image
+	for _, image := range imagesRaw {
+		allImageIds := strings.ReplaceAll(image.ID, "sha256:", "")
+		images = append(images,
+			Image{
+				Id:      allImageIds,
+				Tag:     strings.Join(image.RepoTags, ","),
+				Created: time.Unix(image.Created, 0).String(),
+				Size:    ByteSize(image.Size)})
+		log.Println(image)
+	}
+
+	return images
+}
+
+const (
+	KILOBYTE = 1 << 10
+	MEGABYTE = 1 << 20
+	GIGABYTE = 1 << 30
+)
+
+func ByteSize(bytes int64) string {
+	unit := ""
+	value := float64(bytes)
+
+	switch {
+	case bytes >= GIGABYTE:
+		unit = "G"
+		value = value / GIGABYTE
+	case bytes >= MEGABYTE:
+		unit = "M"
+		value = value / MEGABYTE
+	case bytes >= KILOBYTE:
+		unit = "K"
+		value = value / KILOBYTE
+	}
+
+	result := strconv.FormatFloat(value, 'f', 1, 64)
+	result = strings.TrimSuffix(result, ".0")
+	return result + unit
 }
 
 /**
@@ -162,13 +191,17 @@ func getImages() [] string {
  */
 func removeImage(id string) bool {
 
-	out, err := exec.Command("docker", "rmi", "-f", id).Output()
+	cli, ctx := getClient()
 
+	results, err := cli.ImageRemove(ctx, id, types.ImageRemoveOptions{true, true})
 	if err != nil {
 		return false
 	}
 
-	log.Println(out)
+	for _, result := range results {
+		log.Println(result.Deleted)
+		log.Println(result.Untagged)
+	}
 
 	return true
 }
@@ -178,53 +211,45 @@ func removeImage(id string) bool {
  */
 func removeAllImages() bool {
 
-	// stopping all containers
-	out, err := exec.Command("docker", "ps", "-a", "-q").Output()
+	cli, ctx := getClient()
 
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
-		log.Println("Cannot list running containers")
-		return false
+		panic(err)
 	}
 
-	var runningContainers = strings.Split(string(out), "\n")
+	for _, container := range containers {
+		log.Print("Killing container ", container.ID[:10])
 
-	for _, id := range runningContainers {
-
-		if id == "" {
-			continue
+		err := cli.ContainerKill(ctx, container.ID, "");
+		if err != nil {
+			log.Println(err.Error())
+			return false
 		}
 
-		_, err := exec.Command("docker", "stop", id).Output()
-
+		err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{})
 		if err != nil {
-			log.Println("Cannot stop container", id)
+			log.Println(err.Error())
 			return false
 		}
 	}
 
-	// removing all images
-	out, err = exec.Command("docker", "images", "-q").Output()
-
+	images, err := cli.ImageList(ctx, types.ImageListOptions{All: true})
 	if err != nil {
-		log.Println("Cannot list images (IDs)")
+		log.Println(err.Error())
 		return false
 	}
 
-	var imageIds = strings.Split(string(out), "\n")
-
-	for _, id := range imageIds {
-
-		if id == "" {
-			continue
-		}
-
-		_, err := exec.Command("docker", "rmi", "-f", id).Output()
-
+	for _, image := range images {
+		log.Println("Removing image " + strings.Join(image.RepoTags, ","))
+		_, err := cli.ImageRemove(ctx, image.ID, types.ImageRemoveOptions{Force: true, PruneChildren: true})
 		if err != nil {
-			log.Println("Cannot remove image", id)
+			log.Println(err.Error())
 			return false
 		}
 	}
+
+	log.Println("All images were removed!")
 
 	return true
 }
@@ -232,12 +257,12 @@ func removeAllImages() bool {
 /**
  *	Returns mappings key -> value from arguments
  */
-func getMappings(args []string) map[string]string {
+func getProgramArguments(args []string) map[string]string {
 	mappings := map[string]string{}
 	argsLength := len(args)
 
 	for i := 0; i < argsLength; i++ {
-		items := strings.Split(args[i], CMD_DELIMITER)
+		items := strings.Split(args[i], "=")
 
 		// no pair
 		if len(items) < 2 {
@@ -248,4 +273,17 @@ func getMappings(args []string) map[string]string {
 	}
 
 	return mappings
+}
+
+func getClient() (*client.Client, context.Context) {
+
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts()
+	if err != nil {
+		panic(err)
+	}
+
+	cli.NegotiateAPIVersion(ctx)
+
+	return cli, ctx
 }

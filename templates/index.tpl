@@ -3,28 +3,30 @@
     <div class="row">
         <table class="table table-striped table-hover col-xs-offset-4">
             <thead>
-                <tr>
-                    <th>#</th>
-                    {{ range $header_index, $name := .images_list_header }}
-                    <th>{{ $name }}</th>
-                    {{ end }}
-                    <th>Control</th>
-                </tr>
+            <tr>
+                <th>#</th>
+                <th>Tag</th>
+                <th>Id</th>
+                <th>Created</th>
+                <th>Size</th>
+                <th>Control</th>
+            </tr>
             </thead>
             <tbody>
-                {{ range $row_index, $row := .images_list }}
-                <tr>
-                    <td>{{ $row_index }}</td>
-                    {{ range $col_index, $col := $row }}
-                    <td>{{ $col }}</td>
-                    {{ end }}
-                    <td>
-                        <button class="btn btn-danger btn-sm remove-image" title="Remove image" data-id="{{index $row 2}}">
-                            <i class="material-icons">remove_circle_outline</i>
-                        </button>
-                    </td>
-                </tr>
-                {{ end }}
+            {{ range $index, $image := .images }}
+            <tr>
+                <td>{{ $index }}</td>
+                <td>{{ $image.Tag }}</td>
+                <td title="{{ $image.Id }}">{{ printf "%.12s" $image.Id }}</td>
+                <td title="{{ $image.Created }}">{{ $image.Created }}</td>
+                <td>{{ $image.Size }}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm remove-image" title="Remove image" data-id="{{$image.Id}}">
+                        <i class="material-icons">remove_circle_outline</i>
+                    </button>
+                </td>
+            </tr>
+            {{ end }}
             </tbody>
         </table>
         <div class="col-xs-12">
