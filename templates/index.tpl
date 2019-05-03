@@ -30,6 +30,12 @@
             </tbody>
         </table>
         {{range .images}}
+        {{else}}
+        <div class="col-xs-12 offset-5">
+            No images found.
+        </div>
+        {{end}}
+        {{range .images}}
         <div class="col-xs-12">
             <button class="btn btn-danger btn-sm" style="float: right;" title="Stop containers and remove all images" data-toggle="modal" data-target="#removalAllModal">
                 Remove all images
@@ -43,7 +49,7 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="removalModalTitle"><i class="material-icons">remove_circle_outline</i> Removal of Docker images</h5>
+                <h5 class="modal-title" id="removalModalTitle"><i class="material-icons">remove_circle_outline</i> Removal of Docker image</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
