@@ -23,28 +23,33 @@ $(document).ready(function () {
             });
     });
 
-    $(".remove-image").on("click", function () {
-        var id = $(this).data("id");
+    $('button[data-target="#removalModal"]').on("click", function () {
 
-        $.ajax({
-            method: "POST",
-            url: "/control",
-            data: JSON.stringify({
-                type: "images",
-                command: {
-                    name: "remove",
-                    value: id
-                }
-            }),
-            contentType: "application/json",
-            dataType: 'json'
-        })
-            .done(function (status) {
-                location.reload();
+        var imageId = $(this).data("id");
+        $("#dockerImageTag").text($(this).data("tag"));
+
+        $(".remove-image").on("click", function () {
+
+            $.ajax({
+                method: "POST",
+                url: "/control",
+                data: JSON.stringify({
+                    type: "images",
+                    command: {
+                        name: "remove",
+                        value: imageId
+                    }
+                }),
+                contentType: "application/json",
+                dataType: 'json'
             })
-            .fail(function (response) {
-                handleError(response);
-            });
+                .done(function (status) {
+                    location.reload();
+                })
+                .fail(function (response) {
+                    handleError(response);
+                });
+        });
     });
 
     /**

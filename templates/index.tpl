@@ -21,7 +21,7 @@
                 <td title="{{ $image.Created }}">{{ $image.Created }}</td>
                 <td>{{ $image.Size }}</td>
                 <td>
-                    <button class="btn btn-danger btn-sm remove-image" title="Remove image" data-id="{{$image.Id}}">
+                    <button class="btn btn-danger btn-sm" title="Remove image" data-id="{{$image.Id}}" data-tag="{{$image.Tag}}" data-toggle="modal" data-target="#removalModal">
                         <i class="material-icons">remove_circle_outline</i>
                     </button>
                 </td>
@@ -30,7 +30,7 @@
             </tbody>
         </table>
         <div class="col-xs-12">
-            <button class="btn btn-danger btn-sm" style="float: right;" title="Stop containers and remove all images" data-toggle="modal" data-target="#removalModal">
+            <button class="btn btn-danger btn-sm" style="float: right;" title="Stop containers and remove all images" data-toggle="modal" data-target="#removalAllModal">
                 Remove all images
             </button>
         </div>
@@ -41,6 +41,25 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="removalModalTitle"><i class="material-icons">remove_circle_outline</i> Removal of Docker images</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you <strong>really</strong> want to remove <strong id="dockerImageTag">unknown image name</strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger remove-image">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="removalAllModal" tabindex="-1" role="dialog" aria-labelledby="removalAllModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="removalAllModalTitle"><i class="material-icons">remove_circle_outline</i> Removal of Docker images</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
