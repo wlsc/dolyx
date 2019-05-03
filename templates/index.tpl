@@ -30,9 +30,28 @@
             </tbody>
         </table>
         <div class="col-xs-12">
-            <button class="btn btn-danger btn-sm remove-all-images" style="float: right;" title="Remove all images">
-                <i class="material-icons">remove_circle_outline</i> Remove all images
+            <button class="btn btn-danger btn-sm" style="float: right;" title="Stop containers and remove all images" data-toggle="modal" data-target="#removalModal">
+                Remove all images
             </button>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="removalModal" tabindex="-1" role="dialog" aria-labelledby="removalModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="removalModalTitle"><i class="material-icons">remove_circle_outline</i> Removal of Docker images</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you <strong>really</strong> want to remove <strong>all</strong> images?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger remove-all-images">Remove all</button>
+            </div>
         </div>
     </div>
 </div>

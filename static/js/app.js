@@ -1,50 +1,50 @@
-$(document).ready(function() {
+$(document).ready(function () {
 
-    $(".remove-all-images").on("click", function() {
+    $(".remove-all-images").on("click", function () {
 
         $.ajax({
-          method: "POST",
-          url: "/control",
-          data: JSON.stringify({
-                  type: "images",
-                  command : {
-                         name: "removeall",
-                         value: "all"
-                         }
-                }),
-          contentType: "application/json",
-          dataType: 'json'
+            method: "POST",
+            url: "/control",
+            data: JSON.stringify({
+                type: "images",
+                command: {
+                    name: "removeall",
+                    value: "all"
+                }
+            }),
+            contentType: "application/json",
+            dataType: 'json'
         })
-        .done(function(status) {
-            location.reload();
-          })
-        .fail(function(response) {
-            handleError(response);
-        });
+            .done(function () {
+                location.reload();
+            })
+            .fail(function (response) {
+                handleError(response);
+            });
     });
 
-    $(".remove-image").on("click", function() {
+    $(".remove-image").on("click", function () {
         var id = $(this).data("id");
 
         $.ajax({
-          method: "POST",
-          url: "/control",
-          data: JSON.stringify({
-                  type: "images",
-                  command : {
-                         name: "remove",
-                         value: id
-                         }
-                }),
-          contentType: "application/json",
-          dataType: 'json'
+            method: "POST",
+            url: "/control",
+            data: JSON.stringify({
+                type: "images",
+                command: {
+                    name: "remove",
+                    value: id
+                }
+            }),
+            contentType: "application/json",
+            dataType: 'json'
         })
-        .done(function(status) {
-            location.reload();
-          })
-        .fail(function(response) {
-            handleError(response);
-        });
+            .done(function (status) {
+                location.reload();
+            })
+            .fail(function (response) {
+                handleError(response);
+            });
     });
 
     /**
@@ -58,7 +58,7 @@ $(document).ready(function() {
 
         var status = response.status;
 
-        switch(status){
+        switch (status) {
             case 409:
                 alert(response.error);
                 break;
