@@ -29,13 +29,16 @@
             {{ end }}
             </tbody>
         </table>
+        {{range .images}}
         <div class="col-xs-12">
             <button class="btn btn-danger btn-sm" style="float: right;" title="Stop containers and remove all images" data-toggle="modal" data-target="#removalAllModal">
                 Remove all images
             </button>
         </div>
+        {{end}}
     </div>
 </div>
+{{range .images}}
 <div class="modal fade" id="removalModal" tabindex="-1" role="dialog" aria-labelledby="removalModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -74,4 +77,5 @@
         </div>
     </div>
 </div>
+{{end}}
 {{ template "footer.tpl" .}}
