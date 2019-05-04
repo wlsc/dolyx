@@ -1,4 +1,4 @@
-{{ template "header.tpl" .}}
+{{ template "header.tpl" . }}
 <div class="container">
     <div class="row">
         <table class="table table-striped table-hover col-xs-offset-4">
@@ -29,21 +29,40 @@
             {{ end }}
             </tbody>
         </table>
-        {{if not .images}}
+        {{ if not .images }}
         <div class="col-xs-12 offset-5">
             No images found.
         </div>
-        {{end}}
-        {{if .images}}
-        <div class="col-xs-12">
-            <button class="btn btn-danger btn-sm" style="float: right;" title="Stop containers and remove all images" data-toggle="modal" data-target="#removalAllModal">
+        {{ end }}
+    </div>
+    <div class="row">
+        <div class="col-sm-1">
+            <div class="btn-group">
+                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Prune
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#" id="pruneContainers">Containers</a>
+                    <a class="dropdown-item" href="#" id="pruneImages">Images</a>
+                    <a class="dropdown-item" href="#" id="pruneVolumes">Volumes</a>
+                    <a class="dropdown-item" href="#" id="pruneNetworks">Networks</a>
+                    <a class="dropdown-item" href="#" id="pruneCache">Build Cache</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" id="pruneAll">Everything</a>
+                </div>
+            </div>
+        </div>
+        {{ if .images }}
+        <div class="col-sm-2">
+            <button class="btn btn-danger btn-sm" style="float: left;" title="Stop containers and remove all images" data-toggle="modal" data-target="#removalAllModal">
                 Remove all images
             </button>
         </div>
-        {{end}}
+        <div class="col-sm-1" id="workingLabel" hidden>Working...</div>
+        {{ end }}
     </div>
 </div>
-{{if .images}}
+{{ if .images }}
 <div class="modal fade" id="removalModal" tabindex="-1" role="dialog" aria-labelledby="removalModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -82,5 +101,5 @@
         </div>
     </div>
 </div>
-{{end}}
-{{ template "footer.tpl" .}}
+{{ end }}
+{{ template "footer.tpl" . }}

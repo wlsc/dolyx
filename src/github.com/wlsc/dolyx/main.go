@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -17,8 +18,8 @@ const DEFAULT_HOST string = "localhost"
 const DEFAULT_PORT int64 = 8080
 
 type Command struct {
-	Name  string `form:"name" json:"name" binding:"required"`
-	Value string `form:"value" json:"value" binding:"required"`
+	Name    string `form:"name" json:"name" binding:"required"`
+	Payload string `form:"value" json:"value"`
 }
 
 type Request struct {
@@ -80,9 +81,13 @@ func main() {
 			case "images":
 				handleImagesCommand(request.Command, c)
 				break
+			case "prune":
+				handlePruneCommand(request.Command, c)
+				break
 			default:
 				log.Println("default case fired")
 				showError(c)
+				break
 			}
 		} else {
 			showError(c)
@@ -92,19 +97,16 @@ func main() {
 	_ = router.Run(host + ":" + strconv.FormatInt(port, 10))
 }
 
-/**
- *	Handling command "images"
- */
 func handleImagesCommand(command Command, c *gin.Context) {
 
-	log.Println("Handling image command...")
-
 	var commandName = command.Name
-	var commandValue = command.Value
+	var commandPayload = command.Payload
+
+	log.Println("Handling image command " + commandName + "...")
 
 	switch commandName {
 	case "remove":
-		if removeImage(commandValue) {
+		if removeImage(commandPayload) {
 			c.JSON(http.StatusOK, gin.H{"status": 0})
 		} else {
 			sendRemoveFailed(c)
@@ -120,23 +122,70 @@ func handleImagesCommand(command Command, c *gin.Context) {
 	}
 }
 
-/**
- *	Tells user unable remove an image
- */
+func handlePruneCommand(command Command, c *gin.Context) {
+
+	var commandName = command.Name
+
+	log.Println("Handling prune command " + commandName + "...")
+
+	switch commandName {
+	case "containers":
+		if pruneContainers() {
+			c.JSON(http.StatusOK, gin.H{"status": 0})
+		} else {
+			sendPruneFailed(c)
+		}
+		break
+	case "images":
+		if pruneImages() {
+			c.JSON(http.StatusOK, gin.H{"status": 0})
+		} else {
+			sendPruneFailed(c)
+		}
+		break
+	case "volumes":
+		if pruneVolumes() {
+			c.JSON(http.StatusOK, gin.H{"status": 0})
+		} else {
+			sendPruneFailed(c)
+		}
+		break
+	case "networks":
+		if pruneNetworks() {
+			c.JSON(http.StatusOK, gin.H{"status": 0})
+		} else {
+			sendPruneFailed(c)
+		}
+		break
+	case "cache":
+		if pruneCache() {
+			c.JSON(http.StatusOK, gin.H{"status": 0})
+		} else {
+			sendPruneFailed(c)
+		}
+		break
+	case "all":
+		if pruneAll() {
+			c.JSON(http.StatusOK, gin.H{"status": 0})
+		} else {
+			sendPruneFailed(c)
+		}
+		break
+	}
+}
+
 func sendRemoveFailed(c *gin.Context) {
 	c.JSON(http.StatusConflict, gin.H{"error": "Cannot remove an image"})
 }
 
-/**
- *	Tells user about general error
- */
+func sendPruneFailed(c *gin.Context) {
+	c.JSON(http.StatusConflict, gin.H{"error": "Cannot prune items"})
+}
+
 func showError(c *gin.Context) {
 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Cannot parse command from client"})
 }
 
-/**
- *	Retrieves all available docker images
- */
 func getImages() []Image {
 
 	cli, ctx := getClient()
@@ -162,36 +211,6 @@ func getImages() []Image {
 	return images
 }
 
-const (
-	KILOBYTE = 1 << 10
-	MEGABYTE = 1 << 20
-	GIGABYTE = 1 << 30
-)
-
-func ByteSize(bytes int64) string {
-	unit := ""
-	value := float64(bytes)
-
-	switch {
-	case bytes >= GIGABYTE:
-		unit = "G"
-		value = value / GIGABYTE
-	case bytes >= MEGABYTE:
-		unit = "M"
-		value = value / MEGABYTE
-	case bytes >= KILOBYTE:
-		unit = "K"
-		value = value / KILOBYTE
-	}
-
-	result := strconv.FormatFloat(value, 'f', 1, 64)
-	result = strings.TrimSuffix(result, ".0")
-	return result + unit
-}
-
-/**
- *	Removes a given images
- */
 func removeImage(id string) bool {
 
 	cli, ctx := getClient()
@@ -209,9 +228,6 @@ func removeImage(id string) bool {
 	return true
 }
 
-/**
- *	Stops all running containers and removes all images
- */
 func removeAllImages() bool {
 
 	cli, ctx := getClient()
@@ -257,9 +273,114 @@ func removeAllImages() bool {
 	return true
 }
 
-/**
- *	Returns mappings key -> value from arguments
- */
+func pruneContainers() bool {
+
+	cli, ctx := getClient()
+
+	report, err := cli.ContainersPrune(ctx, filters.Args{})
+	if err != nil {
+		return false
+	}
+
+	for _, v := range report.ContainersDeleted {
+		log.Println("Container " + v + " removed")
+	}
+
+	if len(report.ContainersDeleted) == 0 {
+		log.Println("No containers to prune")
+	}
+	log.Println("Total space reclaimed: " + ByteSize(int64(report.SpaceReclaimed)))
+
+	return true
+}
+
+func pruneImages() bool {
+
+	cli, ctx := getClient()
+
+	report, err := cli.ImagesPrune(ctx, filters.Args{})
+	if err != nil {
+		return false
+	}
+
+	for _, v := range report.ImagesDeleted {
+		log.Println("Image " + v.Deleted + " deleted and untagged " + v.Untagged)
+	}
+
+	if len(report.ImagesDeleted) == 0 {
+		log.Println("No images to prune")
+	}
+	log.Println("Total space reclaimed: " + ByteSize(int64(report.SpaceReclaimed)))
+
+	return true
+}
+
+func pruneVolumes() bool {
+
+	cli, ctx := getClient()
+
+	report, err := cli.VolumesPrune(ctx, filters.Args{})
+	if err != nil {
+		return false
+	}
+
+	for _, v := range report.VolumesDeleted {
+		log.Println("Volume " + v + " deleted")
+	}
+
+	if len(report.VolumesDeleted) == 0 {
+		log.Println("No volumes to prune")
+	}
+	log.Println("Total space reclaimed: " + ByteSize(int64(report.SpaceReclaimed)))
+
+	return true
+}
+
+func pruneNetworks() bool {
+
+	cli, ctx := getClient()
+
+	report, err := cli.NetworksPrune(ctx, filters.Args{})
+	if err != nil {
+		return false
+	}
+
+	for _, v := range report.NetworksDeleted {
+		log.Println("Network " + v + " deleted")
+	}
+
+	if len(report.NetworksDeleted) == 0 {
+		log.Println("No networks to prune")
+	}
+
+	return true
+}
+
+func pruneCache() bool {
+
+	cli, ctx := getClient()
+
+	report, err := cli.BuildCachePrune(ctx, types.BuildCachePruneOptions{})
+	if err != nil {
+		return false
+	}
+
+	for _, v := range report.CachesDeleted {
+		log.Println("Build cache " + v + " deleted")
+	}
+
+	if len(report.CachesDeleted) == 0 {
+		log.Println("No build cache to prune")
+	}
+	log.Println("Total space reclaimed: " + ByteSize(int64(report.SpaceReclaimed)))
+
+	return true
+}
+
+func pruneAll() bool {
+	return pruneContainers() && pruneImages() && pruneVolumes() && pruneNetworks() && pruneCache()
+}
+
 func getProgramArguments(args []string) map[string]string {
 	mappings := map[string]string{}
 	argsLength := len(args)
@@ -289,4 +410,31 @@ func getClient() (*client.Client, context.Context) {
 	cli.NegotiateAPIVersion(ctx)
 
 	return cli, ctx
+}
+
+const (
+	KILOBYTE = 1 << 10
+	MEGABYTE = 1 << 20
+	GIGABYTE = 1 << 30
+)
+
+func ByteSize(bytes int64) string {
+	unit := ""
+	value := float64(bytes)
+
+	switch {
+	case bytes >= GIGABYTE:
+		unit = "G"
+		value = value / GIGABYTE
+	case bytes >= MEGABYTE:
+		unit = "M"
+		value = value / MEGABYTE
+	case bytes >= KILOBYTE:
+		unit = "K"
+		value = value / KILOBYTE
+	}
+
+	result := strconv.FormatFloat(value, 'f', 1, 64)
+	result = strings.TrimSuffix(result, ".0")
+	return result + unit
 }
