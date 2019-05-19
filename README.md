@@ -10,7 +10,15 @@ No need to type anything in console.
 
 The work in progress...
 
+# Screenshots
+
+* [Home view](screenshots/dolyx-home.png)
+* [Prune variants](screenshots/dolyx-prune-list.png)  
+* [Remove dialog](screenshots/dolyx-remove-dialog.png)
+
 # Configuration
+
+Your Docker engine should be up and running.
 
 * **host**. example: host=localhost, default is *localhost*
 * **port**. example: port=8888, default is *8080*
