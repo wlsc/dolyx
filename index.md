@@ -12,9 +12,9 @@ The work in progress...
 
 # Screenshots
 
-* [Home view](screenshots/dolyx-home.png)
-* [Prune variants](screenshots/dolyx-prune-list.png)  
-* [Remove dialog](screenshots/dolyx-remove-dialog.png)
+* [Home view](https://github.com/wlsc/dolyx/blob/master/screenshots/dolyx-home.png)
+* [Prune variants](https://github.com/wlsc/dolyx/blob/master/screenshots/dolyx-prune-list.png)  
+* [Remove dialog](https://github.com/wlsc/dolyx/blob/master/screenshots/dolyx-remove-dialog.png)
 
 # Configuration
 
