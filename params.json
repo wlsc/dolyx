@@ -1,6 +1,0 @@
-{
-  "name": "Dolyx",
-  "tagline": "Purge your Docker images! Finally with Web UI.",
-  "body": "# Dolyx (Docker listings)\r\n\r\n[![License](https://img.shields.io/badge/license-MIT-orange.svg?style=flat)](https://opensource.org/licenses/MIT)\r\n\r\nAlfa version of the GO language program with web interface aimed to help remove your Docker images easily. No need to type anything in console. Purging from your local machine. The work in progress.\r\n\r\n# Configuration\r\n\r\n* **host**. example: host=localhost, default is *localhost*\r\n* **port**. example: port=8888, default is *8080*\r\n\r\n# License\r\n\r\nDistributed under MIT license. Please see LICENSE file.",
-  "note": "Don't delete this file! It's used internally to help with page regeneration."
-}
